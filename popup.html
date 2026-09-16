@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- 顶部标题 -->
+    <div class="header">
+      <div class="title-row">
+        <div class="title">⚡ 秋招AI求职助手</div>
+        <div class="version">v1.9.6</div>
+      </div>
+      <div class="subtitle">AI定制简历 · 智能岗位分析 · 网申一键填表</div>
+    </div>
+
+    <!-- 激活码区域（未激活时显示） -->
+    <div id="activationArea" style="display:none; padding: 16px; background: #fff7e6; border: 1px solid #ffd591; border-radius: 12px; margin-bottom: 16px;">
+      <div style="font-size: 14px; font-weight: 600; color: #fa8c16; margin-bottom: 8px; text-align: center;">🔑 需要激活才能使用</div>
+      <div style="font-size: 12px; color: #666; margin-bottom: 12px; text-align: center;">请输入激活码解锁全部功能</div>
+      <input type="text" id="activationCode" placeholder="请输入激活码，如：QZ2024-XXXX-XXXX"
+        style="width: 100%; padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 6px; font-size: 13px; box-sizing: border-box; margin-bottom: 10px; text-align: center; letter-spacing: 1px;">
+      <button id="activateBtn" style="width: 100%; padding: 10px; background: #fa8c16; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">激活</button>
+      <div id="activationError" style="display:none; margin-top: 8px; font-size: 12px; color: #ff4d4f; text-align: center;"></div>
+    </div>
+
+    <!-- 已激活状态提示（小标签） -->
+    <div id="activatedBadge" style="display:none; text-align: right; margin-bottom: 8px;">
+      <span style="font-size: 10px; color: #52c41a; background: #f6ffed; padding: 2px 8px; border-radius: 10px; border: 1px solid #b7eb8f;">✓ 已激活</span>
+    </div>
+
+    <!-- 首次使用引导 -->
+    <div id="onboarding" class="onboarding" style="display:none;">
+      <div class="onboarding-title">👋 欢迎使用！3步开始</div>
+      <div class="onboarding-steps">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">录入信息</div>
+            <div class="step-desc">点击下方"管理信息"，手动填写或上传简历AI解析</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">打开网申页面</div>
+            <div class="step-desc">在BOSS直聘、智联、牛客等招聘网站打开网申表单</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">一键填充</div>
+            <div class="step-desc">点击"一键填充本页"，自动填写所有表单字段</div>
+          </div>
+        </div>
+      </div>
+      <button id="startBtn" class="start-btn">🚀 开始使用</button>
+    </div>
+
+    <!-- 主界面 -->
+    <div id="mainContent" class="main-content">
+      <!-- 用户信息卡 -->
+      <div class="user-card">
+        <div class="avatar" id="userAvatar">👤</div>
+        <div class="user-info">
+          <div class="username" id="username">未录入信息</div>
+          <div class="user-desc" id="userDesc">点击下方"管理信息"开始录入</div>
+        </div>
+        <div class="user-status" id="userStatus">⚠️</div>
+      </div>
+
+      <!-- 快捷操作 -->
+      <div class="quick-actions">
+        <button id="uploadResumeBtn" class="quick-btn">
+          <span class="quick-icon">📄</span>
+          <span>上传简历</span>
+        </button>
+        <button id="manageInfoBtn" class="quick-btn">
+          <span class="quick-icon">📝</span>
+          <span>管理信息</span>
+        </button>
+      </div>
+
+      <!-- 简历上传提示 -->
+      <div style="margin: 0 0 12px 0; padding: 10px; background: #f0f5ff; border: 1px solid #d6e4ff; border-radius: 8px; font-size: 11px; color: #2f54eb; line-height: 1.5;">
+        💡 <b>提示：</b>上传简历越全面越好（所有实习/项目/技能/获奖都写上），后面AI会根据不同岗位自动挑选最相关的内容生成定制简历。
+      </div>
+
+      <!-- 投递模式切换 -->
+      <div class="mode-switch">
+        <div class="mode-label">投递模式</div>
+        <div class="mode-tabs">
+          <button id="modeBoss" class="mode-tab active">💬 BOSS直聘</button>
+          <button id="modeWangShen" class="mode-tab">📝 网申</button>
+        </div>
+      </div>
+
+      <!-- 当前填表简历状态 -->
+      <div id="resumeModeBar" style="margin: 0 0 12px 0; padding: 10px 12px; border-radius: 8px; font-size: 12px; line-height: 1.5;">
+      </div>
+
+      <!-- 操作步骤引导 -->
+      <div id="stepGuide" class="step-guide">
+        <div class="guide-title" id="guideTitle">📋 BOSS直聘投递流程</div>
+        <div class="guide-steps" id="guideSteps">
+          <div class="guide-step" id="step0" style="background: #fff7e6; border: 1px solid #ffd591; border-radius: 6px; padding: 6px 8px; margin-bottom: 6px;">
+            <span class="step-num" style="background: #fa8c16;">0</span>
+            <span style="color: #fa8c16; font-weight: 600;">先上传简历 / 录入你的完整经历库</span>
+          </div>
+          <div class="guide-step"><span class="step-num">1</span><span>分析岗位，匹配度&lt;60分建议跳过</span></div>
+          <div class="guide-step"><span class="step-num">2</span><span>补充缺失经历/技能或项目（如果有）</span></div>
+          <div class="guide-step"><span class="step-num">3</span><span>生成岗位定制简历</span></div>
+          <div class="guide-step"><span class="step-num">4</span><span>用定制内容优化在线简历</span></div>
+          <div class="guide-step"><span class="step-num">5</span><span>打招呼，等HR回复</span></div>
+          <div class="guide-step"><span class="step-num">6</span><span>回复后发送定制PDF简历</span></div>
+        </div>
+      </div>
+
+      <!-- 核心操作按钮（按流程顺序） -->
+      <div class="action-buttons">
+        <!-- 岗位JD分析按钮 -->
+        <button id="analyzeBtn" class="analyze-btn">
+          <span class="analyze-icon">🎯</span>
+          <span>1. 分析这个岗位</span>
+        </button>
+
+        <!-- AI生成定制简历按钮 -->
+        <button id="generateResumeBtn" class="generate-resume-btn">
+          <span class="generate-icon">📄</span>
+          <span>2. 生成岗位定制简历</span>
+        </button>
+
+        <!-- 生成开放性问题回答选项 -->
+        <label style="display: flex; align-items: center; gap: 6px; margin: 0 0 10px 4px; font-size: 12px; color: #6b7280; cursor: pointer;">
+          <input type="checkbox" id="openQuestions" style="cursor: pointer;">
+          <span>同时生成开放性问题回答（为什么选我们/职业规划等）</span>
+        </label>
+
+        <!-- 一键填充按钮 -->
+        <button id="fillBtn" class="fill-btn">
+          <span class="fill-icon">⚡</span>
+          <span>3. 一键填充本页</span>
+        </button>
+      </div>
+
+      <!-- 填充选项 -->
+      <div class="options">
+        <label class="option-item">
+          <input type="checkbox" id="onlyEmpty">
+          <span>只填充空字段</span>
+        </label>
+        <label class="option-item">
+          <input type="checkbox" id="autoFill">
+          <span>自动填充新增字段</span>
+        </label>
+      </div>
+
+      <!-- 状态提示 -->
+      <div id="status" class="status"></div>
+
+      <!-- 填充结果统计 -->
+      <div id="fillStats" class="fill-stats" style="display:none;">
+        <div class="stats-header">
+          <span class="stats-title">📊 填充结果</span>
+          <span class="stats-time" id="fillTime"></span>
+        </div>
+        <div class="stats-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div class="progress-text" id="progressText">0%</div>
+        </div>
+        <div class="stats-cards">
+          <div class="stat-card success">
+            <div class="stat-number" id="statFilled">0</div>
+            <div class="stat-label">已填充</div>
+          </div>
+          <div class="stat-card skipped">
+            <div class="stat-number" id="statSkipped">0</div>
+            <div class="stat-label">跳过</div>
+          </div>
+          <div class="stat-card warning">
+            <div class="stat-number" id="statUnrecognized">0</div>
+            <div class="stat-label">未识别</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 详细填充结果 -->
+      <div id="fillResult" class="fill-result" style="display:none;">
+        <div class="result-header" id="resultToggle">
+          <span>📋 填充详情</span>
+          <span class="toggle-icon" id="toggleIcon">▼</span>
+        </div>
+        <div id="resultDetails" class="result-details"></div>
+      </div>
+    </div>
+
+    <!-- 底部 -->
+    <div class="footer">
+      <div class="footer-item" id="helpBtn">❓ 使用帮助</div>
+      <div class="footer-item" id="feedbackBtn">💬 反馈问题</div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
